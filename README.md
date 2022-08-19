@@ -61,17 +61,17 @@
 
   | VARIABLE        | VALUE                                                            |
   | --------------- | ---------------------------------------------------------------- |
+  | PATH_FILE       | https://<backend_domain>/uploads/                                |
+  | SECRET_KEY      | bebas apa saja ...                                               |
+  | SERVER_KEY      | SB-Mid-server-fJxxxxxxxxxxxxxxxxxxx3                             |
+  | CLIENT_KEY      | SB-Mid-client-YUxxxxxxxxxxxxxMS                                  |
+  | EMAIL_SYSTEM    | demo.dumbways@gmail.com                                          |
+  | PASSWORD_SYSTEM | rqxxxxxxxxxxxuu                                                  |
   | DB_HOST         | exx-xx-xx-xxx-xx.compute-1.amazonaws.com                         |
   | DB_NAME         | dboxxxxxxxb9e                                                    |
   | DB_PASSWORD     | bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxc |
   | DB_PORT         | 5432                                                             |
   | DB_USER         | etxxxxxxxxxls                                                    |
-  | EMAIL_SYSTEM    | demo.dumbways@gmail.com                                          |
-  | PASSWORD_SYSTEM | rqxxxxxxxxxxxuu                                                  |
-  | PATH_FILE       | https://<backend_domain>/uploads/                                |
-  | SECRET_KEY      | bebas apa saja ...                                               |
-  | SERVER_KEY      | SB-Mid-server-fJxxxxxxxxxxxxxxxxxxx3                             |
-  | CLIENT_KEY      | SB-Mid-client-YUxxxxxxxxxxxxxMS                                  |
 
 * Get Database Connection Setup from `Resources` &rarr; `Heroku Postgres` &rarr; `Settings` &rarr; `View Credentials`
 
