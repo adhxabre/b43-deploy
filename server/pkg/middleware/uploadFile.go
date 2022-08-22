@@ -91,9 +91,10 @@ func UploadFile(next http.HandlerFunc) http.HandlerFunc {
 
 		data := tempFile.Name()
 		// Delete 1 line split uploads/ code ...
+		filename := data[8:]
 
 		// add data variable to ctx (on parameter 3) ...
-		ctx := context.WithValue(r.Context(), "dataFile", data)
+		ctx := context.WithValue(r.Context(), "dataFile", filename)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
