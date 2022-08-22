@@ -6,7 +6,6 @@ import (
 	"dumbmerch/routes"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -38,7 +37,9 @@ func main() {
 	var AllowedMethods = handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS", "PATCH", "DELETE"})
 	var AllowedOrigins = handlers.AllowedOrigins([]string{"*"})
 	
-	var port = os.Getenv("PORT")
+	// Modify 1 line this below code get port from env ...
+	var port = "5000";
+
 	fmt.Println("server running localhost:"+port)
 	http.ListenAndServe(":"+port, handlers.CORS(AllowedHeaders, AllowedMethods, AllowedOrigins)(r))
 }
