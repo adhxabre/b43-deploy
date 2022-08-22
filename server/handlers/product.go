@@ -6,6 +6,7 @@ import (
 	"dumbmerch/models"
 	"dumbmerch/repositories"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,6 +14,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
+
+	"context" // Import "context" here ...
+
+	"github.com/cloudinary/cloudinary-go/v2"              // Import "github.com/cloudinary/cloudinary-go/v2" here ...
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader" // Import "github.com/cloudinary/cloudinary-go/v2/api/uploader" here ...
 )
 
 type handlerProduct struct {
@@ -34,11 +40,6 @@ func (h *handlerProduct) FindProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, p := range products {
-		imagePath := os.Getenv("PATH_FILE") + p.Image
-		products[i].Image = imagePath
-	}
-
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: products}
 	json.NewEncoder(w).Encode(response)
@@ -58,8 +59,6 @@ func (h *handlerProduct) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product.Image = os.Getenv("PATH_FILE") + product.Image
-
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponseProduct(product)}
 	json.NewEncoder(w).Encode(response)
@@ -72,9 +71,10 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
 	userId := int(userInfo["id"].(float64))
 
-	// get image filename
+	// Modify get image `filename` to `filepath` here ...
+	// get image filepath
 	dataContex := r.Context().Value("dataFile")
-	filename := dataContex.(string)
+	filepath := dataContex.(string)
 
 	var categoriesId []int
 	for _, r := range r.FormValue("categoryId") {
@@ -82,7 +82,6 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 			categoriesId = append(categoriesId, int(r-'0'))
 		}
     }
-
 
 	price, _ := strconv.Atoi(r.FormValue("price"))
 	qty, _ := strconv.Atoi(r.FormValue("qty"))
@@ -108,11 +107,27 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	// Get all category data by id [] 
 	category, _ := h.ProductRepository.FindCategoriesById(categoriesId)
 
+	// Declare Context Background, Cloud Name, API Key, API Secret ...
+	var ctx = context.Background()
+	var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+	var API_KEY = os.Getenv("API_KEY")
+	var API_SECRET = os.Getenv("API_SECRET")
+
+	// Add your Cloudinary credentials ...
+	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+
+	// Upload file to Cloudinary ...
+	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "dumbmerch"});
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 	product := models.Product{
 		Name:   request.Name,
 		Desc:   request.Desc,
 		Price:  request.Price,
-		Image:  filename,
+		Image:  resp.SecureURL, // Modify store file URL to database from resp.SecureURL ...
 		Qty:    request.Qty,
 		UserID: userId,
 		Category:	category,

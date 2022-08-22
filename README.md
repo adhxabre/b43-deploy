@@ -1,129 +1,137 @@
-# Deploy backend to heroku
+# Cloudinary
 
-`Heroku` is a cloud platform as a service supporting several programming languages. One of the first cloud platforms, Heroku has been in development since June 2007, when it supported only the Ruby programming language, but now supports Java, Node.js, Scala, Clojure, Python, PHP, and `Go`.
+`Cloudinary` is a cloud-based image and video management services. It enables users to upload, store, manage, manipulate, and deliver images and video for websites and apps.
 
-- Install postgres
+Reference: [Offical Cloudinary Website](https://cloudinary.com/documentation/go_integration)
+
+### Prepare
+
+- Login to [cloudinary](https://cloudinary.com/)
+
+* Click `Media Library`
+
+* Create a folder that will be used to store files
+
+  ![img-1](./img-1.png)
+
+* Go to `Settings` → `Upload`
+
+* Scroll down to `Upload presets`, Click `Add upload preset` → fill in the form and click `save`
+
+### Server side (backend)
+
+- Install cloudinary
+
+  ```
+  go get github.com/cloudinary/cloudinary-go/v2
+  ```
+
+- On `uploadFile.go` file delete split `uploads/` code and change `data` variable to `ctx` (on parameter 3)
+
+  > File: `pkg/middleware/uploadFile.go`
 
   ```go
-  go get -u gorm.io/driver/postgres
+  data := tempFile.Name()
+  // Delete 1 line this below code ...
+  filename := data[8:] // split uploads/
+
+  // add data variable to ctx (on parameter 3) ...
+  ctx := context.WithValue(r.Context(), "dataFile", data)
+  next.ServeHTTP(w, r.WithContext(ctx))
   ```
 
-- Modify connection database with `env` and `postgres`
+- On handler `product.go` file
 
-  > File: `pkg/mysql/mysql.go`
+  > File: `handlers/product.go`
 
-  - Import postgres package
-
-    ```go
-    "gorm.io/driver/postgres"
-    ```
-
-  - Get `host`, `user`, `password`, `database name`, and `port` from env
+  - Import pakcage
 
     ```go
-    var DB_HOST = os.Getenv("DB_HOST")
-    var DB_USER = os.Getenv("DB_USER")
-    var DB_PASSWORD = os.Getenv("DB_PASSWORD")
-    var DB_NAME = os.Getenv("DB_NAME")
-    var DB_PORT = os.Getenv("DB_PORT")
+    "context"
+    "github.com/cloudinary/cloudinary-go/v2"
+    "github.com/cloudinary/cloudinary-go/v2/api/uploader"
     ```
 
-  - Setup Database connection
+  - On `CreateProduct` method, modify get image `filename` to `filepath`
+
+    Before
 
     ```go
-    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
-    DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    // get image filename
+    dataContex := r.Context().Value("dataFile")
+    filename := dataContex.(string)
     ```
 
-* Modify the server port from env
+    After
 
-  > File: `main.go`
-
-  ```javascript
-  var port = os.Getenv("PORT");
-  ```
-
-* Go to Heroku web : [Link](https://www.heroku.com/) & Create new app
-
-* Fill out the form → click `Create app`
-
-* Go to Resources → add `Heroku Postgress` on Add-ons
-
-* Create repository on github & push restAPI project
-
-* On heroku, Go to `Deploy` → Search repository & click `connect`
-
-* Scroll down, click `Enable Automatic Deploys`, Choose a branch & click `Deploy Branch`
-
-* Go to `Settings`, scroll down to `Config Vars`, Add the `config vars` from dotenv file
-
-  ![image](./img-1.png)
-
-  | VARIABLE        | VALUE                                                            |
-  | --------------- | ---------------------------------------------------------------- |
-  | PATH_FILE       | https://<backend_domain>/uploads/                                |
-  | SECRET_KEY      | bebas apa saja ...                                               |
-  | SERVER_KEY      | SB-Mid-server-fJxxxxxxxxxxxxxxxxxxx3                             |
-  | CLIENT_KEY      | SB-Mid-client-YUxxxxxxxxxxxxxMS                                  |
-  | EMAIL_SYSTEM    | demo.dumbways@gmail.com                                          |
-  | PASSWORD_SYSTEM | rqxxxxxxxxxxxuu                                                  |
-  | DB_HOST         | exx-xx-xx-xxx-xx.compute-1.amazonaws.com                         |
-  | DB_NAME         | dboxxxxxxxb9e                                                    |
-  | DB_PASSWORD     | bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxc |
-  | DB_PORT         | 5432                                                             |
-  | DB_USER         | etxxxxxxxxxls                                                    |
-
-* Get Database Connection Setup from `Resources` &rarr; `Heroku Postgres` &rarr; `Settings` &rarr; `View Credentials`
-
-  ![image](./img-2.png)
-
-* Then to ensure our Backend is deployed, we can click `Open App`
-
-# Deploy frontend to netlify
-
-`Netlify` is a San Francisco-based cloud computing company that offers hosting and serverless backend or frontend services for web applications and static websites.
-
-- First Modify `Midtrans Client Key` and config `baseUrl` from ENV
-
-  - Midtrans Client Key
-
-    > File: `src/pages/DetailProduct.js`
-
-    ```javascript
-    const myMidtransClientKey = process.env.REACT_APP_MIDTRANS_CLIENT_KEY;
+    ```go
+    // get image filepath
+    dataContex := r.Context().Value("dataFile")
+    filepath := dataContex.(string)
     ```
 
-  - Config `baseUrl`
+  - On `CreateProduct` method, declare `context background`, `CLOUD_NAME`, `API_KEY`, `API_SECRET`
 
-    > File: `src/config/api.js`
+    ```go
+    var ctx = context.Background()
+    var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+    var API_KEY = os.Getenv("API_KEY")
+    var API_SECRET = os.Getenv("API_SECRET")
+    ```
 
-    ```javascript
-    {
-        baseURL: process.env.REACT_APP_BASEURL,
+  - On `CreateProduct` method, Add Cloudinary credentials and Upload file to your Cloudinary folder
+
+    ```go
+    // Add your Cloudinary credentials ...
+    cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+
+    // Upload file to Cloudinary ...
+    resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "dumbmerch"});
+
+    if err != nil {
+      fmt.Println(err.Error())
     }
     ```
 
-- Create repository & push frontend project
+  - On `CreateProduct` method, modify store file URL to `database` from `resp.SecureURL`
 
-- Go to [Netlify](http://netlify.com) → Login → Click `New site from Git`
+    ```go
+    product := models.Product{
+      Name:   request.Name,
+      Desc:   request.Desc,
+      Price:  request.Price,
+      Image:  resp.SecureURL, // Modify store file URL to database from resp.SecureURL ...
+      Qty:    request.Qty,
+      UserID: userId,
+      Category:	category,
+    }
+    ```
 
-* Connect to Git provider, click `Github`
+- Make sure modify this below code:
 
-* Pick a repository
+  > File: `handlers/product.go`
 
-* Site settings, and deploy
+  - On `FindProducts` method, `delete` pathfile manipulation
 
-* Scroll down, modify Build command to `CI= npm run build`. Click `Show advanced`
+    ```go
+    for i, p := range products {
+      imagePath := os.Getenv("PATH_FILE") + p.Image
+      products[i].Image = imagePath
+    }
+    ```
 
-* Click `New variable` for add `environment variables`
+  - On `GetProduct` method, `delete` pathfile manipulation
 
-  | VARIABLE                      | VALUE                            |
-  | ----------------------------- | -------------------------------- |
-  | REACT_APP_MIDTRANS_CLIENT_KEY | SB-Mid-client-YUxxxxxxxxxxxxxMS  |
-  | REACT_APP_BASEURL             | https://<backend_domain>/api/v1/ |
+    ```go
+    product.Image = os.Getenv("PATH_FILE") + product.Image
+    ```
 
-- Click `Deploy site`
+- Add `CLOUD_NAME`, `API_KEY`, `API_SECRET` variable and the values to `.env`
 
-- Wait deploy progress
+  > File: `.env`
 
-- Click the link for open web
+  ```.env
+  CLOUD_NAME=your_cloud_name_here...
+  API_KEY=your_api_key_here...
+  API_SECRET=your_api_secret_here...
+  ```
