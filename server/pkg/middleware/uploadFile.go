@@ -19,7 +19,7 @@ func UploadFile(next http.HandlerFunc) http.HandlerFunc {
 		file, _, err := r.FormFile("image")
 
 		if err != nil && r.Method == "PATCH" {
-			ctx := context.WithValue(r.Context(), "dataFile", "false" )
+			ctx := context.WithValue(r.Context(), "dataFile", "false")
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -91,10 +91,10 @@ func UploadFile(next http.HandlerFunc) http.HandlerFunc {
 
 		data := tempFile.Name()
 		// Delete 1 line split uploads/ code ...
-		filename := data[8:]
+		// filename := data[8:]
 
 		// add data variable to ctx (on parameter 3) ...
-		ctx := context.WithValue(r.Context(), "dataFile", filename)
+		ctx := context.WithValue(r.Context(), "dataFile", data)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
